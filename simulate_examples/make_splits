@@ -1,0 +1,7 @@
+#!/bin/bash
+python3 selection_generator.py $1
+
+rm -f generated_files/selam_output$1
+../SELAM_binary --seed $RANDOM -d generated_files/demography$1 -o generated_files/output$1 -c 2 1 0 -s generated_files/selection$1
+
+python3 get_splits.py generated_files/selam_output$1
