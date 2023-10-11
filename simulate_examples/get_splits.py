@@ -1,6 +1,10 @@
 import sys
 
-selam_output = sys.argv[1]
+id = ""
+if len(sys.argv) > 1:
+  id = sys.argv[1]
+
+selam_output = "generated_files/selam_output"+id
 
 
 # list of lists of split points
@@ -28,10 +32,10 @@ with open(selam_output) as selam:
         line = lines[i].split()
 
         if line[6] != '0' or line[7] != '0':
-            split_points[chromosome].append(float(line[7]))
+            split_points[chromosome].append(line[7])
 
+split_file = open('splits/split'+id, "w")
 
 for i in range(len(split_points)):
-    print()
-    for split in split_points[i]:
-        print(split)
+    line = "\t".join(split_points[i])
+    split_file.write(line + "\n")
