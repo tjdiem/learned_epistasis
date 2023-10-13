@@ -27,11 +27,6 @@ Ne          = 10000
 count = 50
 
 
-
-
-
-
-
 selection = open("generated_files/selection"+id, "w")
 selection.write("D\tA\t0\t0\t"+str(site_1_loc)+"\t"+str(site_2_loc)+"\t")
 
