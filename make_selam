@@ -1,3 +1,7 @@
+mkdir simulate_examples/generated_files
+mkdir simulate_examples/commands
+mkdir simulate_examples/splits
+
 cd SELAM/src/
 make
 cp SELAM ../../SELAM_binary

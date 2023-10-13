@@ -1,10 +1,25 @@
 #!/bin/bash
-mkdir generated_files
-mkdir splits
 
-python3 selection_generator.py $1
+#Command arguments
+#1 : string id for this data point
+#2 : size of chromosomes (Morgans)
+#3 : admixture proportion
+#4 : admixture time (generations)
+#5 : population size
+#6 : number of individuals sampled (chromosomes will be 2*this)
+#7 : location of first epistatic site
+#8 : location of second epistatic site
+#9 : strength of epistatic selection
+#10: True for recessive epistasis, False for dominant epistasis
+#11: location of regular selection site
+#12: Strength of regular selection site
 
-rm -f generated_files/selam_output$1
-../SELAM_binary --seed $RANDOM -d generated_files/demography$1 -o generated_files/output$1 -c 2 1 0 -s generated_files/selection$1
+
+echo $@ > commands/command_$1
+
+python3 selection_generator.py $1 $3 $4 $5 $6 $7 $8 $9 ${10} ${11} ${12}
+
+rm -f generated_files/selam_output_$1
+../SELAM_binary --seed $RANDOM -d generated_files/demography_$1 -o generated_files/output_$1 -c 2 $2 0 -s generated_files/selection_$1
 
 python3 get_splits.py $1
