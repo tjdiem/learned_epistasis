@@ -7,6 +7,12 @@ output_size1 = 64
 n_embd = 32
 head_size = 16
 num_heads = 4 #head_size must be divisible by num_heads
+num_blocks = 3
+
+num_chrom = 100
+len_chrom = 85
+n_embd = 3
+
 
 class Head(nn.Module):
     
@@ -61,37 +67,64 @@ class Block(nn.Module):
         super().__init__()
         self.multihead = MultiHead(num_heads, head_size // num_heads)
         self.ffwd = FeedForward(n_embd)
+        self.ln1 = nn.LayerNorm(n_embd)
+        self.ln2 = nn.LayerNorm(n_embd)
 
     def forward(self, x):
         # input = output = (batch,input_size,n_embd)
-        x = x + self.multihead(x) 
-        x = x + self.ffwd(x)
+        x = x + self.multihead(self.ln1(x))
+        x = x + self.ffwd(self.ln2(x))
         return x
 
 class Model(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.pos_embedding = nn.Embedding(input_size1, n_embd) #could embed rank and file separately
-        #self.head = Head(head_size)
-        self.blocks = nn.Sequential(*[Block() for _ in range(3)])
+        self.pos_embedding = nn.Embedding(len_chrom, n_embd)
+        self.blocks = nn.Sequential(*[Block() for _ in range(num_blocks)])
         self.multihead = MultiHead(num_heads, head_size // num_heads)
-        self.linear = nn.Linear(input_size1*n_embd,output_size1)
+        self.linear = nn.Linear(len_chrom*n_embd,len_chrom*n_embd) #can change the output size of this
+        self.ln1 = nn.LayerNorm(len_chrom*n_embd)
+
+        ##
+        self.ln2 = nn.LayerNorm(num_chrom*len_chrom*n_embd)
+
+        self.linear2_1 = nn.Linear(num_chrom*len_chrom*n_embd,100)
+        self.linear3_1 = nn.Linear(100,1)
+
+        self.linear2_2 = nn.Linear(num_chrom*len_chrom*n_embd,100)
+        self.linear3_2 = nn.Linear(100,1)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
-        batch, input_size = x.shape
-        x = F.one_hot(x, num_classes=n_embd) # (batch, input_size, n_embd)
-        square_embd = self.pos_embedding(torch.arange(input_size)) # (input_size, n_embd)
-        x = x + square_embd #position embedding #(batch, input_size, n_embd)
-        x = self.blocks(x) #(batch, input_size, n_embd)
-        x = x.view(batch, input_size1*n_embd)
-        x = self.linear(x)
+        # X (batch, num_chrom, len_chrom, n_embd)
+        #print(x.shape)
+        #pos_embd = self.pos_embedding(torch.arange(len_chrom)) # (len_chrom, n_embd)
+        #x = x + pos_embd #(batch, num_chrom, len_chrom, n_embd)
+        #x = torch.cat((x, torch.zeros(len_chrom)),dim=2)
+        x = self.blocks(x) #(batch, num_chrom, len_chrom, n_embd)
+        x = x.view(x.shape[0], num_chrom, len_chrom*n_embd) #(batch, num_chrom, len_chrom * n_embd)
+        x = self.ln1(x) #(batch, num_chrom, len_chrom * n_embd)
+        x = self.linear(x) #(batch, num_chrom, len_chrom * n_embd)
+
+        x = x.view(x.shape[0], num_chrom*len_chrom*n_embd)
+        x = self.ln2(x)
+
+        y1 = self.linear2_1(x)
+        y1 = self.relu(y1)
+        y1 = self.linear3_1(y1)
+
+        y2 = self.linear2_2(x)
+        y2 = self.relu(y2)
+        y2 = self.linear3_2(y2)
+
+        # print(x.shape)
         # x = self.multihead(x) #batch, input_size, head_size
         # x = x.view(batch, input_size*head_size)
         # x = self.linear1(x) 
         # x = self.relu(x)
         # x = self.linear2(x)
 
-        return x
+        return y1, y2
 
     
