@@ -35,7 +35,9 @@ site_3_strength  = float(sys.argv[11])
 
 
 
+
 selection = open("generated_files/selection_"+id, "w")
+
 selection.write("D\tA\t0\t0\t"+str(site_1_loc)+"\t"+str(site_2_loc)+"\t")
 
 a = str(1 - strength)
