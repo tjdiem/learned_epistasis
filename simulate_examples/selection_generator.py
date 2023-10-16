@@ -2,32 +2,42 @@ import sys
 from random import random
 
 
-id = ""
-if len(sys.argv) > 1:
-  id = sys.argv[1]
 
-
-
-
-#Epistatic selection parameters
-site_1_loc = 0.05
-site_2_loc = 0.35
-
-strength    = 0.01
-recessive = True
+id = sys.argv[1]
 
 
 #Admixed population parameters
-prop        = 0.2
-generations = 200
-Ne          = 10000
+prop        = float(sys.argv[2])
+generations = int(sys.argv[3])
+Ne          = int(sys.argv[4])
 
 
 #sampling parameters
-count = 50
+count = int(sys.argv[5])
+
+#Epistatic selection parameters
+site_1_loc = float(sys.argv[6])
+site_2_loc = float(sys.argv[7])
+
+strength   = float(sys.argv[8])
+recessive  = bool(sys.argv[9])      #True for recessive, False for dominant
+
+#Regular selection site
+site_3_loc       = float(sys.argv[10])
+site_3_strength  = float(sys.argv[11])
 
 
-selection = open("generated_files/selection"+id, "w")
+
+
+
+
+
+
+
+
+
+selection = open("generated_files/selection_"+id, "w")
+
 selection.write("D\tA\t0\t0\t"+str(site_1_loc)+"\t"+str(site_2_loc)+"\t")
 
 a = str(1 - strength)
@@ -37,22 +47,21 @@ if (recessive):
 else:
   selection.write("1\t1\t1\t"+a+"\t"+a+"\t1\t"+a+"\t"+a+"\t1\n")
 
-
-
+selection.write("S\tA\t0\t"+str(site_3_loc)+"\t1\t"+str(1 - site_3_strength/2)+"\t"+str(1 - site_3_strength)+"\n")
 
 
 
 
 
 # generate output file
-output_string = str(generations)+"\t0\t"+str(count)+"\t0\tgenerated_files/selam_output"+id+"\n"
-output = open("generated_files/output"+id, "w")
+output_string = str(generations)+"\t0\t"+str(count)+"\t0\tgenerated_files/selam_output_"+id+"\n"
+output = open("generated_files/output_"+id, "w")
 output.write(output_string)
 output.close()
 
 
 #generate demography file
-demo = open("generated_files/demography"+id, "w")
+demo = open("generated_files/demography_"+id, "w")
 demo.write("pop1\tpop2\tsex\t0\t1\n")
 demo.write("0\t0\tA\t"+str(Ne)+"\t"+str(Ne)+"\n")
 demo.write("0\ta0\tA\t"+str(prop)+"\t0\n")

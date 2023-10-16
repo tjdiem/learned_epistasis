@@ -4,7 +4,7 @@ id = ""
 if len(sys.argv) > 1:
   id = sys.argv[1]
 
-selam_output = "generated_files/selam_output"+id
+selam_output = "generated_files/selam_output_"+id
 
 
 # list of lists of split points
@@ -34,7 +34,7 @@ with open(selam_output) as selam:
         if line[6] != '0' or line[7] != '0':
             split_points[chromosome].append(line[7])
 
-split_file = open('splits/split'+id, "w")
+split_file = open('splits/split_'+id, "w")
 
 for i in range(len(split_points)):
     line = "\t".join(split_points[i])
