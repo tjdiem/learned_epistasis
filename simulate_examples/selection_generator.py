@@ -20,7 +20,7 @@ site_1_loc = float(sys.argv[6])
 site_2_loc = float(sys.argv[7])
 
 strength   = float(sys.argv[8])
-recessive  = bool(sys.argv[9])      #True for recessive, False for dominant
+recessive  = sys.argv[9] == '1'     #1 for recessive, 0 for dominant
 
 #Regular selection site
 site_3_loc       = float(sys.argv[10])

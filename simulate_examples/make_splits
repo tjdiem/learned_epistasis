@@ -10,7 +10,7 @@
 #7 : location of first epistatic site
 #8 : location of second epistatic site
 #9 : strength of epistatic selection
-#10: True for recessive epistasis, False for dominant epistasis
+#10: 1 for recessive, 0 for dominant
 #11: location of regular selection site
 #12: Strength of regular selection site
 
