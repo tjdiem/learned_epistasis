@@ -1,6 +1,7 @@
 mkdir simulate_examples/generated_files
 mkdir simulate_examples/commands
 mkdir simulate_examples/splits
+mkdir simulate_examples/genotypes
 
 cd SELAM/src/
 make
