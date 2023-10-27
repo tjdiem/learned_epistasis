@@ -91,13 +91,11 @@ class Block(nn.Module):
        x1 = x1 + self.multihead(lnx1,lnx1)
        x1 = x1 + self.multihead(self.ln2(x1), self.ln3(x2))
 
-
        x1 = x1 + self.ffwd(self.ln4(x1))
        return x1
 
 
 class TransformerModel1(nn.Module):
-
 
    def __init__(self):
        super().__init__()
@@ -110,8 +108,6 @@ class TransformerModel1(nn.Module):
        self.linear = nn.Linear(input_size*n_embd,1) #can change the output size of this
        self.ln1 = nn.LayerNorm(input_size*n_embd)
        self.sigmoid = nn.Sigmoid()
-
-
 
 
    def forward(self, x1, x2):
@@ -142,9 +138,7 @@ class SimpleModel(nn.Module):
 
        self.ln = nn.LayerNorm(250)
 
-
        self.relu = nn.Sigmoid()
-
 
        self.linear2 = nn.Linear(250,1)
        self.sigmoid = nn.Sigmoid()
@@ -159,7 +153,6 @@ class SimpleModel(nn.Module):
        x = x.reshape(x.shape[0], -1) # (batch, input_size*n_embd)
        x = self.linear1(x)
        x = self.relu(x)
-
 
        print(x)
 
