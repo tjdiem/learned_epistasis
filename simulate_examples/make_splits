@@ -23,3 +23,7 @@ rm -f generated_files/selam_output_$1
 ../SELAM_binary --seed $RANDOM -d generated_files/demography_$1 -o generated_files/output_$1 -c 2 $2 0 -s generated_files/selection_$1
 
 python3 get_splits.py $1
+
+python3 phase.py $1 > genotypes/phase_$1
+
+python3 sample_genotypes.py $1
