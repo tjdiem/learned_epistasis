@@ -46,6 +46,15 @@ with open("genotypes/phase_"+id) as phase_file:
                 x += window_size
                     
             anc = phases[h]
+        
+        
+        while(x < 1):
+                
+            ancestries[-1][j] = anc
+
+            j += 1
+            x += window_size
+        
 
 
 
