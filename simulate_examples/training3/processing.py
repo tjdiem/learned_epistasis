@@ -3,6 +3,7 @@ import os
 import subprocess
 import time
 import random
+from math import sqrt, e, pi
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -10,6 +11,8 @@ random.seed(1337)
 num_samples = models.len_chrom
 num_chrom = 100
 start_time = time.time()
+
+sigma = 4
 
 def GetMemory():
     if os.name == 'posix':
@@ -31,6 +34,7 @@ def GetTime():
     seconds = seconds % 60
     print(f"Total time elapsed: {hours}h {minutes}m {seconds}s")
 
+Normal = lambda x, mean: e**(-0.5*((x-mean)/sigma)**2) / (sigma * sqrt(2*pi))
 
 def convert_sampling_file(file):
     
@@ -48,29 +52,23 @@ def convert_command_file1(file):
         lines, = f.readlines()
 
     point = float(lines.split()[-2])
-    out1 = [0.0 for _ in range(num_samples)]
-    out2 = [0.0 for _ in range(num_samples)]
+    arange = np.arange(num_samples)
+
     ind = round(point*num_samples - 0.5)
     #out1[ind] = 1.0
 
-    vals = [0.05, 0.1,0.15, 0.25,0.37, 0.52, 0.67, 0.77, 0.87, 0.95,0.87,0.77,0.67,0.52,0.37,0.25,0.15,0.1,0.051]
-    d = len(vals) - 1
-    inds = list(range(ind - d //2, ind + d//2 + 1))
-    for val, ind in zip(vals,inds):
-        if 0 <= ind < len(out1):
-            out1[ind] = val
-
-    
+    out1 = Normal(arange,ind)
+    out1 = out1 / out1[ind] #Normalize peak to have value 1
+    out1 = out1.tolist()
 
     while True:
         rand_ind = random.randint(0,num_samples-1)
         if abs(rand_ind - ind) > 20:
             break
 
-    inds = list(range(rand_ind - d //2, rand_ind + d//2 + 1))
-    for val, ind in zip(vals,inds):
-        if 0 <= ind < len(out1):
-            out1[ind] = val
+    out2 = Normal(arange,rand_ind)
+    out2 = out2 / out2[rand_ind]
+    out2 = out2.tolist()
 
     return [out1,out2]
 
@@ -100,4 +98,3 @@ def convert_command_file2(command_file):
     out2[point_2] = 1
 
     return out1, out2
-
