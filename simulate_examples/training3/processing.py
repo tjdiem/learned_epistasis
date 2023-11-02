@@ -144,3 +144,34 @@ def convert_command_file2(command_file):
 
     return [out1, out2]
 
+def convert_command_file4(command_file):
+    # same as convert_command_file2 except False example will take one true epistatic site
+    # this gets around 75% accuracy with simple model
+
+    with open(command_file, "r") as f:
+        string, = f.readlines()
+
+    points = [float(s) for s in string.split(" ")[6:8]]
+
+    ind1, ind2 = [round(point*num_samples - 0.5) for point in points]
+
+    arange = np.arange(num_samples)
+
+    out1 = Normal(arange,ind1) + Normal(arange,ind2)
+    out1 = out1 / out1[ind1]
+    out1 = out1.tolist()
+
+    while True:
+        rand_ind = random.randint(0,num_samples-1)
+        if abs(rand_ind - ind1) > 15 and abs(rand_ind - ind2) > 15:
+            break
+
+    if random.random() < 0.5:
+        out2 = Normal(arange,ind1) + Normal(arange,rand_ind)
+    else:
+        out2 = Normal(arange,ind2) + Normal(arange,rand_ind)
+
+    out2 = out2 / out2[rand_ind]
+    out2 = out2.tolist()
+
+    return [out1, out2]
