@@ -1,6 +1,7 @@
 from processing import *
 from models import *
 import multiprocessing
+import concurrent.futures
 import torch
 import torch.nn as nn
 
@@ -11,17 +12,25 @@ num_epochs = 200
 batch_size = 64
 train_prop = 0.9
 num_estimate = 500
-lr = 0.000001
+lr = 0.01
 
-X1 = [convert_sampling_file("sampled_genotypes/sample_" + str(i)) for i in range(num_files)]
+# def process_item(i):
+#     return convert_sampling_file("sampled_genotypes/sample_stronger_" + str(i))
+
+# with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+#     X1 = list(executor.map(process_item, list(range(num_files))))
+
+X1 = [convert_sampling_file("sampled_genotypes/sample_stronger_" + str(i)) for i in range(num_files)]
 X1 = torch.tensor(X1) - 1
 GetMemory()
 X1 = X1.repeat_interleave(2,dim=0)
 print(X1.shape)
 
-X2 = [convert_command_file1("../commands/command_" + str(i)) for i in range(num_files)]
+X2 = [convert_command_file1("commands/command_stronger_" + str(i)) for i in range(num_files)]
 X2 = torch.tensor(X2)
-X2 = X2.reshape(num_files*2, -1)
+X2 = X2.reshape(num_files*2,-1)
+print(X2.shape)
+
 
 GetMemory()
 
@@ -31,6 +40,9 @@ y = torch.tensor([i%2 for i in range(1,num_files*2 + 1)])
 ind = int(train_prop * X1.shape[0]) // 2
 idx = torch.randperm(X1.shape[0] // 2)
 idx = [2*i for i in idx[:ind]] + [2*i + 1 for i in idx[:ind]] + [2*i for i in idx[ind:]] + [2*i + 1 for i in idx[ind:]] #include both True and False example for each sample
+
+print(max(idx))
+
 
 X1 = X1[idx]
 X2 = X2[idx]

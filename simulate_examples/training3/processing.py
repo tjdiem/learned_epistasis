@@ -12,7 +12,7 @@ num_samples = models.len_chrom
 num_chrom = 100
 start_time = time.time()
 
-sigma = 4
+sigma = 2.5
 
 def GetMemory():
     if os.name == 'posix':
@@ -48,6 +48,7 @@ def convert_sampling_file(file):
     return out
 
 def convert_command_file1(file):
+    # convert selected site with normal distribution - standard deviation sigma can be adjusted
     with open(file,"r") as f:
         lines, = f.readlines()
 
@@ -55,10 +56,9 @@ def convert_command_file1(file):
     arange = np.arange(num_samples)
 
     ind = round(point*num_samples - 0.5)
-    #out1[ind] = 1.0
 
     out1 = Normal(arange,ind)
-    out1 = out1 / out1[ind] #Normalize peak to have value 1
+    out1 = out1 / out1[ind]
     out1 = out1.tolist()
 
     while True:
@@ -72,29 +72,75 @@ def convert_command_file1(file):
 
     return [out1,out2]
 
+
+def convert_command_file3(file):
+    # convert selected site with "normal-ish" distribution
+
+    with open(file,"r") as f:
+        lines, = f.readlines()
+
+    point = float(lines.split()[-2])
+    out1 = [0.0 for _ in range(num_samples)]
+    out2 = [0.0 for _ in range(num_samples)]
+    ind = round(point*num_samples - 0.5)
+    #out1[ind] = 1.0
+
+    vals = [0.05, 0.1,0.15, 0.25,0.37, 0.52, 0.67, 0.77, 0.87, 0.95,0.87,0.77,0.67,0.52,0.37,0.25,0.15,0.1,0.051]
+    d = len(vals) - 1
+    inds = list(range(ind - d //2, ind + d//2 + 1))
+    for val, ind in zip(vals,inds):
+        if 0 <= ind < len(out1):
+            out1[ind] = val
+
+    
+
+    while True:
+        rand_ind = random.randint(0,num_samples-1)
+        if abs(rand_ind - ind) > 20:
+            break
+
+    inds = list(range(rand_ind - d //2, rand_ind + d//2 + 1))
+    for val, ind in zip(vals,inds):
+        if 0 <= ind < len(out1):
+            out2[ind] = val
+
+    return [out1,out2]
+
 def convert_command_file2(command_file):
+    #convert epistatic sites with sum of normal distributions
+    
     with open(command_file, "r") as f:
         string, = f.readlines()
 
     points = [float(s) for s in string.split(" ")[6:8]]
 
-    out1 = [0.0 for _ in range(num_samples)]
-    out2 = [0.0 for _ in range(num_samples)]
-
     inds = [round(point*num_samples - 0.5) for point in points]
 
+    ind1, ind2 = sorted(inds)
 
+    arange = np.arange(num_samples)
 
-    out1[inds[0]] = 1
-    out1[inds[1]] = 1
+    out1 = Normal(arange,ind1) + Normal(arange,ind2)
+    out1 = out1 / out1[ind1]
+    out1 = out1.tolist()
+
+    # out1[inds[0]] = 1
+    # out1[inds[1]] = 1
 
     while True:
-        point_1 = random.randint(0,num_samples-1)
-        point_2 = random.randint(0,num_samples-1)
-        if point_1 != point_2 and [point_1,point_2] != inds and [point_2,point_1] != inds:
+        rand_ind1 = random.randint(0,num_samples-1)
+        rand_ind2 = random.randint(0,num_samples-1)
+        rand_ind1, rand_ind2 = sorted([rand_ind1, rand_ind2])
+        if abs(rand_ind1 - rand_ind2) > 10 and (abs(rand_ind1 - ind1) > 10 or abs(rand_ind2 - ind2) > 10):
             break
 
-    out2[point_1] = 1
-    out2[point_2] = 1
+    out2 = Normal(arange,rand_ind1) + Normal(arange,rand_ind2)
+    out2 = out2 / out2[rand_ind1]
+    out2 = out2.tolist()
+    
 
-    return out1, out2
+    # out2[rand_ind1] = 1
+    # out2[rand_ind2] = 1
+
+    return [out1, out2]
+
