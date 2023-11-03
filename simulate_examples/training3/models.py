@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-num_chrom = 50
+num_chrom = 100
 len_chrom = 1000
 
 n_embd = len_chrom
