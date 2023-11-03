@@ -94,7 +94,10 @@ class TransformerModel1(nn.Module):
         self.ln1 = nn.LayerNorm(input_size*n_embd)
         self.sigmoid = nn.Sigmoid()
 
+        self.embd = nn.Embedding(n_embd, n_embd)
+
     def forward(self, x1, x2):
+        x2 = self.embd(x2)
         # x1 (batch, input_size, n_embd) sampling
         # x2 (batch, n_embd) site location
         x2 = x2.unsqueeze(1) # (batch, 1, n_embd)
@@ -114,7 +117,7 @@ class SimpleModel(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.linear1 = nn.Linear((input_size+1)*n_embd, 250)
+        self.linear1 = nn.Linear(2*n_embd, 250)
 
         self.ln = nn.LayerNorm(250)
 
@@ -123,14 +126,15 @@ class SimpleModel(nn.Module):
         self.linear2 = nn.Linear(250,1)
         self.sigmoid = nn.Sigmoid()
 
+        self.emb = nn.Embedding(len_chrom,len_chrom)
 
     def forward(self, x1, x2):
 
         x1 = x1.mean(dim=1)
+        #x2 = self.emb(x2)
         #x2 = x2.unsqueeze(1)
         x = torch.cat((x1, x2), dim=1)
         
-
         x = x.reshape(x.shape[0], -1) # (batch, input_size*n_embd)
         x = self.linear1(x)
         x = self.relu(x)
@@ -142,13 +146,35 @@ class SimpleModel(nn.Module):
         x = self.sigmoid(x)
 
         return x
-
-
     
 
-"""
-models:
-SimpleModel:       simple 2 layer FFNN, used as baseline test
-TransformerModel1: Decoder only transformer with attention mechanism in the len_chrom dimension
-                   2 feedfoward layers are applied after
-"""
+# Model with learned embedding
+class NewModel(nn.Module):
+    #Simple model to use as baseline
+
+    def __init__(self):
+        super().__init__()
+        self.linear1 = nn.Linear(n_embd, n_embd)
+
+        self.ln = nn.LayerNorm(250)
+
+        self.relu = nn.Sigmoid()
+
+        self.linear2 = nn.Linear(250,1)
+        self.sigmoid = nn.Sigmoid()
+
+        self.emb = nn.Embedding(len_chrom,len_chrom)
+
+    def forward(self, x1, x2):
+
+        x1 = x1.mean(dim=1)
+        x1 = self.linear1(x1)
+
+        x2 = self.emb(x2)
+
+        x = x1 * x2 #dot product with batch dimension
+
+        x = x.mean(dim=1)
+        x = self.sigmoid(x)
+        
+        return x
