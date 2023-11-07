@@ -2,24 +2,29 @@ from processing import *
 import numpy as np
 import matplotlib.pyplot as plt
 
-i = 13
+for i in range(200,250):
 
-X = convert_sampling_file("sampled_genotypes/sample_" + str(i))
-y = convert_command_file1("../commands/command_" + str(i))
+    X = convert_sampling_file("../../test_training/sampled_genotypes/sample_stronger_" + str(i))
+    y = convert_command_file1("../../test_training/commands/command_stronger_" + str(i))
 
-X = np.array(X)
-y = np.array(y)
+    with open("../../test_training/commands/command_stronger_" + str(i), "r") as f:
+        string = f.readlines()[0].split(" ")
 
-ind = np.argmax(y[0])
+    print(string)
 
-X = X.sum(axis=0)
-print(X.mean())
-print(X.min())
-print(X[ind])
+    X = np.array(X)
+    y = np.array(y)
 
-print(X.shape)
-print(ind)
+    ind = np.argmax(y[0])
 
-plt.scatter(range(len(X)), X)
-plt.scatter(ind,X[ind])
-plt.show()
+    X = X.sum(axis=0)
+    print(X.mean())
+    print(X.min())
+    print(X[ind])
+
+    print(X.shape)
+    print(ind)
+
+    plt.scatter(range(len(X)), X)
+    plt.scatter(ind,X[ind])
+    plt.show()
