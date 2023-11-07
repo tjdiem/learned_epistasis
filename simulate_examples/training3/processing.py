@@ -176,3 +176,43 @@ def convert_command_file4(command_file):
 
     return [out1, out2]
 
+def convert_command_file5(command_file):
+    # same as convert_command_file4 except False example will take selected site 
+    # as one of the sites half the time
+
+    with open(command_file, "r") as f:
+        string, = f.readlines()
+
+    points_str = string.split()
+    points = [float(s) for s in points_str[6:8]]
+
+    inds = [round(point*num_samples - 0.5) for point in points]
+
+    ind1, ind2 = sorted(inds)
+
+    arange = np.arange(num_samples)
+
+    out1 = Normal(arange,ind1) + Normal(arange,ind2)
+    out1 = out1 / out1[ind1]
+    out1 = out1.tolist()
+
+    if random.random() < 0.5:
+
+        while True:
+            false_ind = random.randint(0,num_samples-1)
+            if abs(false_ind - ind1) > 15 and abs(false_ind - ind2) > 15:
+                break
+
+    else:
+        point = float(points_str[-2])
+        false_ind = round(point*num_samples - 0.5)
+
+    if random.random() < 0.5:
+        out2 = Normal(arange,ind1) + Normal(arange,false_ind)
+    else:
+        out2 = Normal(arange,ind2) + Normal(arange,false_ind)
+
+    out2 = out2 / out2[false_ind]
+    out2 = out2.tolist()
+
+    return [out1, out2]

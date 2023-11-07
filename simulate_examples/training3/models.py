@@ -97,7 +97,7 @@ class TransformerModel1(nn.Module):
         self.embd = nn.Embedding(n_embd, n_embd)
 
     def forward(self, x1, x2):
-        x2 = self.embd(x2)
+        # x2 = self.embd(x2)
         # x1 (batch, input_size, n_embd) sampling
         # x2 (batch, n_embd) site location
         x2 = x2.unsqueeze(1) # (batch, 1, n_embd)
@@ -145,6 +145,47 @@ class SimpleModel(nn.Module):
         x = x.reshape(-1)
         x = self.sigmoid(x)
 
+        return x
+    
+class CorrelationModel(nn.Module):
+    #Simple model to use as baseline
+
+    def __init__(self):
+        super().__init__()
+        hidden1 = 300
+        self.linear1 = nn.Linear(n_embd*n_embd*2,hidden1)
+
+        self.ln = nn.LayerNorm(hidden1)
+
+        self.sigmoid = nn.Sigmoid()
+
+        self.linear2 = nn.Linear(hidden1,1)
+        # self.sigmoid = nn.Sigmoid()
+
+        # self.emb = nn.Embedding(len_chrom,len_chrom)
+
+    def forward(self, x1, x2):
+
+        # x1 (batch, input_size, n_embd) sampling
+        # x2 (batch, n_embd) site location
+
+        x1 = x1.transpose(-2,-1) @ x1 / x1.shape[1] # (batch,n_embd,n_embd)
+        x1 = x1.reshape(x1.shape[0], n_embd*n_embd)
+
+        x2 = x2.unsqueeze(1) #(batch,1,n_embd)
+        x2 = x2.transpose(-2,-1) @ x2 #(batch,n_embd,n_embd)
+        x2 = x2.reshape(x2.shape[0], n_embd*n_embd) 
+
+        x = torch.cat((x1,x2), dim=1) #(batch, n_embd*n_embd*2)
+        x = self.linear1(x)
+
+        x = self.ln(x)
+        x = self.sigmoid(x)
+        x = self.linear2(x)
+
+        x = x.reshape(-1)
+        x = self.sigmoid(x)
+        
         return x
     
 
