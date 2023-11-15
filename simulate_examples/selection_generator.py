@@ -47,8 +47,11 @@ if (recessive):
 else:
   selection.write("1\t1\t1\t"+a+"\t"+a+"\t1\t"+a+"\t"+a+"\t1\n")
 
-selection.write("S\tA\t0\t"+str(site_3_loc)+"\t1\t"+str(1 - site_3_strength/2)+"\t"+str(1 - site_3_strength)+"\n")
 
+if site_3_strength > 0:
+  selection.write("S\tA\t0\t"+str(site_3_loc)+"\t1\t"+str(1 - site_3_strength/2)+"\t"+str(1 - site_3_strength)+"\n")
+else:
+  selection.write("S\tA\t0\t"+str(site_3_loc)+"\t"+str(1 + site_3_strength)+"\t"+str(1 + site_3_strength/2)+"\t1\n")
 
 
 
