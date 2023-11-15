@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 torch.set_num_threads(32)
 
 num_chrom = 100

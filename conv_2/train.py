@@ -10,10 +10,10 @@ print(GPU_available)
 
 num_files = 10000
 num_epochs = 500
-batch_size = 64
+batch_size = 256
 train_prop = 0.9
-num_estimate = 5000
-lr = 0.000001 * 1000
+num_estimate = 10000
+lr = 0.000001 * 100
 
 
 
@@ -44,8 +44,8 @@ if saving:
     C = torch.tensor(C).float()
     torch.save(C, "C10k")
 else:
-    X = torch.load("X10k")
-    C = torch.load("C10k")
+    X = torch.load("X100k")
+    C = torch.load("C100k")
 
 print(X.shape)
 print(C.shape)
@@ -168,22 +168,97 @@ def estimate_loss(num_samples):
             called_0 /= sums
             called_1 /= sums
             print(i, f"{called_0:.3f}" , f"{called_1:.3f}", sep='\t')
+        
+
+            
+
+        
+        print()
+        print(split, "M and T evaluation")
+
+        for i in range(8):
+            minim = 0.1 + i/10
+            maxum = 0.2 + i/10
+
+            subset_0 = ((C[:,1] >= minim) & (C[:,1] < maxum))
+
+            for j in range(10):
+
+                minim = 100 + j*50
+                maxum = 150 + j*50
+
+                subset_1 = ((C[:,2] >= minim) & (C[:,2] < maxum))
+
+                subset = (subset_0 & subset_1)
+
+                subset_count = subset.sum().item()
+                num_correct = ((predictions == y) & subset).sum().item()
+
+                if subset_count == 0:
+                    print("0",end='')
+                    continue
+                
+                ratio = num_correct / subset_count
+
+                if ratio < 0.5:
+                    print(".",end='')
+                elif ratio < 0.66:
+                    print("-",end='')
+                elif ratio < 0.75:
+                    print("+",end='')
+                elif ratio < 0.95:
+                    print("$",end='')
+                else:
+                    print("#",end='')
+            
+            print()
 
 
         print()
-        print(split, "weak epistatis:")
 
-        num_correct = ((predictions == y) & weak_epistasis).sum().item()
-        print(f"Accuracy {split}: {num_correct/weak_count:0.4f}")
+        print(split, "epistrength and normstrength evaluation")
 
-        print("\t0\t1")
-        for i in range(3):
-            called_0 = torch.sum((predictions == 0) & (I == i) & weak_epistasis).item()
-            called_1 = torch.sum((predictions == 1) & (I == i) & weak_epistasis).item()
-            sums = called_0 + called_1
-            called_0 /= sums
-            called_1 /= sums
-            print(i, f"{called_0:.3f}" , f"{called_1:.3f}", sep='\t')
+        for i in range(9):
+            minim = 0.01 + i * 0.01
+            maxum = 0.02 + i * 0.01
+
+            subset_0 = ((C[:,7] >= minim) & (C[:,7] < maxum))
+
+            for j in range(20):
+
+                minim = -0.05  + j * 0.005
+                maxum = -0.045 + j * 0.005
+
+                subset_1 = ((C[:,10] >= minim) & (C[:,10] < maxum))
+
+                subset = (subset_0 & subset_1)
+
+                subset_count = subset.sum().item()
+                num_correct = ((predictions == y) & subset).sum().item()
+
+                if subset_count == 0:
+                    print("0",end='')
+                    continue
+                
+                ratio = num_correct / subset_count
+
+                if ratio < 0.5:
+                    print(".",end='')
+                elif ratio < 0.66:
+                    print("-",end='')
+                elif ratio < 0.75:
+                    print("+",end='')
+                elif ratio < 0.95:
+                    print("$",end='')
+                else:
+                    print("#",end='')
+            
+            print()
+
+
+        print()
+
+            
 
     model.train()
 
