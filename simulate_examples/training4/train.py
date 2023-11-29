@@ -121,7 +121,7 @@ for epoch in range(num_epochs):
     X = X.reshape(-1,2*sample_width,num_chrom)
     idx = torch.randperm(num_chrom)
     X = X[:,:,idx]
-    X = X.reshape(-1,num_chrom*2)
+    X = X.reshape(-1,sample_width*num_chrom*2)
     
     for ind in range(0,X_train.shape[0],batch_size):
 
