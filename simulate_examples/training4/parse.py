@@ -1,5 +1,6 @@
 #save list of indices where epistatic strength is smaller
 import numpy as np
+import matplotlib.pyplot as plt
 import random
 
 num_samples = 1000
@@ -14,10 +15,15 @@ num_samples = 1000
 # with open("smaller_epistatic.txt", "w") as f:
 #     f.write(str(l))
 
+# exit()
+
 l = []
+
+y = []
+x = []
 idx = list(range(87500))
 random.shuffle(idx)
-for i in idx[:5000]:
+for p,i in enumerate(idx):
 
     sampling_file = "../../test_training/sampled_genotypes/sample_stronger_" + str(i)
     try:
@@ -38,8 +44,24 @@ for i in idx[:5000]:
     inds = [round(num_samples*point - 0.5) for point in points]
     regular_site = round(num_samples*float(s[10]) - 0.5)
 
-    if min(X[inds]) > X[regular_site] + 10:
+    # x.append(float(s[8]) + float(s[11]))
+    # y.append(min(X))
+    # y.append(min(X[inds]) - X[regular_site])
+
+    if min(X) > -85:
         l.append(i)
+
+    if p % 1000 == 0:
+        print(p)
+    #     print(s)
+    # else: 
+    #     print(s)
+
+with open("smaller_strength.txt", "w") as f:
+    f.write(str(l))
+
+# plt.scatter(x,y)
+# plt.show()
 
 
 print(len(l))

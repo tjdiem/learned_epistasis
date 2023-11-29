@@ -1,8 +1,12 @@
 from processing import *
 import numpy as np
 import matplotlib.pyplot as plt
+from ast import literal_eval
 
-for i in range(1999,2008):
+with open("smaller_epistatic.txt","r") as f:
+    idx = literal_eval(f.read())
+
+for i in idx[103:128]:
 
     sampling_file = "../../test_training/sampled_genotypes/sample_stronger_" + str(i)
     with open(sampling_file, "r") as f:
