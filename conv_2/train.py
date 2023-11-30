@@ -8,7 +8,7 @@ GPU_available = torch.cuda.is_available()
 print(GPU_available)
 
 
-num_files = 10000
+num_files = 100000
 num_epochs = 500
 batch_size = 256
 train_prop = 0.9
@@ -30,19 +30,19 @@ lr = 0.000001 * 100
 #num_estimate = 500
 #lr = 0.000001 * 1
 
-saving = False
+saving = True
 
 
 if saving:
     X = [create_input("../../data/sampled_genotypes/sample_" + str(i), "../../data/commands/command_" + str(i)) for i in range(num_files)]
     X = [x for x in X if x is not None]
     X = torch.tensor(X).float()
-    torch.save(X, "X10k")
+    torch.save(X, "X100k")
 
     C = [convert_command_file("../../data/commands/command_" + str(i)) for i in range(num_files)]
     C = [x for x in C if x is not None]
     C = torch.tensor(C).float()
-    torch.save(C, "C10k")
+    torch.save(C, "C100k")
 else:
     X = torch.load("X100k")
     C = torch.load("C100k")
