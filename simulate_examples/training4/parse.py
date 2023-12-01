@@ -16,6 +16,14 @@ num_samples = 1000
 #     f.write(str(l))
 
 # exit()
+for i in range(87500):
+    with open("../../test_training/commands/command_stronger_" + str(i), "r") as f:
+        s = f.readlines()[0].split()
+
+    if int(s[3]) > 550:
+        print(i)
+        exit()
+
 
 l = []
 

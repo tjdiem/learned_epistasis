@@ -115,25 +115,25 @@ def test(file_number, num_min):
 
 
     ### 320 470 518
-    C = np.ones_like(C)
+    # C = np.ones_like(C)
     # for i in range(num_samples):
     #     for j in range(i+20,num_samples):
 
-    a = 0
-    b = 0
-    for i in range(443,463):
-        for j in range(665,685):
-            C[i,j] = p_score(X[:,i],X[:,j])
-            print(i,j)
-            print(C[i,j])
-            if C[i,j] < 0.001:
-                print(X[:,i])
-                print(X[:,j])
+    # a = 0
+    # b = 0
+    # for i in range(443,463):
+    #     for j in range(665,685):
+    #         C[i,j] = p_score(X[:,i],X[:,j])
+    #         print(i,j)
+    #         print(C[i,j])
+    #         if C[i,j] < 0.001:
+    #             print(X[:,i])
+    #             print(X[:,j])
 
-            b += C[i,j]
-            a += 1
+    #         b += C[i,j]
+    #         a += 1
 
-    print(b/a)
+    # print(b/a)
 
 
     # values = C[indices]
@@ -209,12 +209,12 @@ def test(file_number, num_min):
     # for i in range(max(ind_true[0]-10,0),min(ind_true[0]+11,1000)):
     #     print(C[i,ind_true[1]])
     #     print(p_score(X[:,i],X[:,ind_true[1]]))
-    with np.printoptions(threshold=100000,linewidth=92):
-        print(X[:,ind_true[0]-3:ind_true[0]+3])
-        print()
-        print(X[:,ind_true[1]-3:ind_true[1]+3])
-        print()
-        print(X[:,regular_site-3:regular_site+3])
+    # with np.printoptions(threshold=100000,linewidth=92):
+    #     print(X[:,ind_true[0]-3:ind_true[0]+3])
+    #     print()
+    #     print(X[:,ind_true[1]-3:ind_true[1]+3])
+    #     print()
+    #     print(X[:,regular_site-3:regular_site+3])
     # print()
     # print("REGULAR")
     # for i in range(max(0,regular_site-10),min(regular_site+11, 1000)):
