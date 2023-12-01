@@ -6,14 +6,14 @@ import multiprocessing
 
 GPU_available = torch.cuda.is_available()
 print(GPU_available)
+sys.stdout.flush()
 
-
-num_files = 10000
-num_epochs = 500
-batch_size = 256
+num_files = 100000
+num_epochs = 50
+batch_size = 2048
 train_prop = 0.9
 num_estimate = 10000
-lr = 0.000001 * 100
+lr = 0.000001 * 10000
 
 
 
@@ -58,7 +58,7 @@ C = C.reshape(num_files*3, 11)
 print(X.shape)
 print(C.shape)
 
-
+sys.stdout.flush()
 
 
 GetMemory()
@@ -103,6 +103,7 @@ GetTime()
 # Define network
 model = EpiModel()
 criterion = nn.BCELoss()
+criterion = CustomLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 
 
@@ -170,7 +171,8 @@ def estimate_loss(num_samples):
             print(i, f"{called_0:.3f}" , f"{called_1:.3f}", sep='\t')
         
 
-            
+        
+        called_epistasic = (predictions == 1)
 
         
         print()
@@ -189,7 +191,7 @@ def estimate_loss(num_samples):
 
                 subset_1 = ((C[:,2] >= minim) & (C[:,2] < maxum))
 
-                subset = (subset_0 & subset_1)
+                subset = (subset_0 & subset_1 & called_epistasic)
 
                 subset_count = subset.sum().item()
                 num_correct = ((predictions == y) & subset).sum().item()
@@ -231,7 +233,7 @@ def estimate_loss(num_samples):
 
                 subset_1 = ((C[:,10] >= minim) & (C[:,10] < maxum))
 
-                subset = (subset_0 & subset_1)
+                subset = (subset_0 & subset_1 & called_epistasic)
 
                 subset_count = subset.sum().item()
                 num_correct = ((predictions == y) & subset).sum().item()
@@ -322,3 +324,7 @@ for epoch in range(num_epochs):
         optimizer.step()        #loss.backward knows where to go
 
     estimate_loss(min(num_estimate, X_test.shape[0]))
+    sys.stdout.flush()
+
+
+GetTime()
