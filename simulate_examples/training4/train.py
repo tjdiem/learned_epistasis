@@ -8,29 +8,39 @@ from ast import literal_eval
 
 GPU_available = torch.cuda.is_available()
 print(GPU_available)
-num_files = 87500
-num_epochs = 200
-batch_size = 256
+num_files = 100_000
+num_epochs = 30
+batch_size = 128
 train_prop = 0.9
-num_estimate = 500
-lr = 0.0001
+num_estimate = 5000
+lr_start = 3e-4
+lr_end = lr_start/100
 
 
 # with open("smaller_epistatic.txt","r") as f:
 #     idx = literal_eval(f.read())
 
-idx = list(range(87500))
-idx = torch.randperm(len(idx))[:num_files].tolist()
+# idx = list(range(87500))
+# idx = torch.randperm(len(idx))[:num_files].tolist()
 
-X = [convert_files("../../test_training/sampled_genotypes/sample_stronger_" + str(i), "../../test_training/commands/command_stronger_" + str(i)) for i in idx] 
+X = [convert_files("../sampled_genotypes/sample_" + str(i), "../commands/command_" + str(i)) for i in range(num_files)] 
 X = [x for x in X if x is not None]
 
-X = torch.tensor(X)
+C = [convert_command_file1("../commands/command_" + str(i)) for i in range(num_files)]
+C = [c for x,c in zip(X,C) if x is not None]
+
+
+X = torch.tensor(X) - 1
 X = X.reshape(-1, sample_width*num_chrom * 2)
+
+C = torch.tensor(C)
+C = C.reshape(num_files*2, 11)
 
 GetMemory()
 
 y = torch.tensor([i%2 for i in range(1,num_files*2 + 1)])
+
+I = torch.tensor([i % 3 for i in range(X.shape[0])])
 
 
 # Scramble data
@@ -49,8 +59,12 @@ y_train, y_test = y[:ind], y[ind:]
 GetMemory()
 GetTime()
 
+# lr variables
+lr = lr_start
+lr_factor = (lr_end/lr_start)**(1/(num_epochs - 1))
+
 # Define network
-model = PairwiseSimpleModel()
+model = TransformerModel1()
 criterion = nn.BCELoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 
@@ -102,7 +116,7 @@ else:
     print("No GPU available. Running on CPU.")
 
 GetMemory()
-estimate_loss(min(num_estimate, X_test.shape[0]))
+# estimate_loss(min(num_estimate, X_test.shape[0]))
 #Training loop
 
 #os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb: SIZE"
@@ -110,7 +124,7 @@ estimate_loss(min(num_estimate, X_test.shape[0]))
 model.train()
 for epoch in range(num_epochs):
     print("-----------------------------------------------------------------")
-    print(f"Started training on epoch {epoch + 1} of {num_epochs}.")
+    print(f"Started training on epoch {epoch + 1} of {num_epochs}, learning rate {lr:0.7f}")
     GetTime()
     # Scramble data
     idx = torch.randperm(X_train.shape[0])
@@ -118,11 +132,11 @@ for epoch in range(num_epochs):
     y_train = y_train[idx]
 
     # Shuffle in sampling dimension
-    X = X.reshape(-1,2*sample_width,num_chrom)
+    X_train = X_train.reshape(-1,2*sample_width,num_chrom)
     idx = torch.randperm(num_chrom)
-    X = X[:,:,idx]
-    X = X.reshape(-1,sample_width*num_chrom*2)
-    
+    X_train = X_train[:,:,idx]
+    X_train = X_train.reshape(-1,sample_width*num_chrom*2)
+
     for ind in range(0,X_train.shape[0],batch_size):
 
         #print(torch.cuda.max_memory_allocated(),"and", torch.cuda.memory_allocated())
@@ -142,6 +156,7 @@ for epoch in range(num_epochs):
             y_pred = model(X_batch)
         except torch.cuda.OutOfMemoryError:
             torch.cuda.empty_cache()
+            print(ind)
             y_pred = model(X_batch)
 
 
@@ -151,4 +166,14 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 
+    lr *= lr_factor
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
+
     estimate_loss(min(num_estimate, X_test.shape[0]))
+    # for child in model.children():
+    #     if isinstance(child,nn.Linear):
+    #         print("next")
+    #         print("weight")
+    #         print(child.weight)
+    #         print("bias")
+    #         print(child.bias)

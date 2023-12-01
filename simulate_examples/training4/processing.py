@@ -74,11 +74,19 @@ def split_to_sample(split_file, sampled_sites):
 
 def convert_files(sampling_file, command_file):
     
-    try:
-        with open(sampling_file, "r") as f:
-            lines = f.readlines()
-    except FileNotFoundError:
+    _, num = command_file.split("_")
+    num = int(num)
+    
+    if num % 1000 == 0:
+        print(num)
+
+
+    with open(sampling_file, "r") as f:
+        lines = f.readlines()
+
+    if len(lines) < 100:
         return None
+
 
     X = [[int(l) for l in line[:-1]] for line in lines]
 
@@ -121,3 +129,13 @@ def convert_files(sampling_file, command_file):
     out_false = site2 + regular_site if random.random() < 0.5 else regular_site + site2
 
     return [out_true, out_false]
+
+def convert_command_file1(file):
+    
+    with open(file,"r") as f:
+        lines, = f.readlines()
+    
+
+    flist = [float(x) for x in lines.split()[1:]]
+
+    return [flist,flist]
