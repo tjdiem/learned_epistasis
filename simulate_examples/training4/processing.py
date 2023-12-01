@@ -11,8 +11,11 @@ random.seed(1337)
 num_samples = models.len_chrom
 num_chrom = 100
 start_time = time.time()
+sample_width = models.sample_width
 
 sigma = 2.5
+
+assert sample_width >= 1 and sample_width % 2 == 1
 
 def GetMemory():
     if os.name == 'posix':
@@ -36,10 +39,46 @@ def GetTime():
 
 Normal = lambda x, mean: e**(-0.5*((x-mean)/sigma)**2) / (sigma * sqrt(2*pi))
 
+def split_to_sample(split_file, sampled_sites):
+    with open(split_file, "r") as f:
+        lines = f.readlines()
+
+    lines = [[float(l) for l in line] for line in lines]
+
+    min_site = sampled_sites[0]
+
+    X = [[0 for _ in range(len(lines)//2)] for _ in range(len(sampled_sites))]
+    for i in range(0,len(lines),2):
+        split_points = lines[i]
+        categories = lines[i+1]
+
+        # find correct starting index
+        ind = min_site * len(split_points)
+        if split_points[ind] < min_site:  
+            while split_points[ind] < min_site:
+                ind += 1
+            ind -= 1
+        else:
+            while split_points[ind] >= min_site:
+                ind -= 1
+
+        # sample sites
+        for j,site in enumerate(sampled_sites):
+            while site > split_points[ind+1]:
+                ind += 1
+
+            X[j][i // 2] = categories[ind]
+
+
+
+
 def convert_files(sampling_file, command_file):
     
-    with open(sampling_file, "r") as f:
-        lines = f.readlines()
+    try:
+        with open(sampling_file, "r") as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        return None
 
     X = [[int(l) for l in line[:-1]] for line in lines]
 
@@ -53,6 +92,19 @@ def convert_files(sampling_file, command_file):
     site1 = [sample[ind1] for sample in X]
     site2 = [sample[ind2] for sample in X]
     regular_site = [sample[regular_ind] for sample in X]
+
+    for offset in range(1, sample_width // 2 + 1):
+        site_prev = [sample[ind1 - offset] for sample in X] if ind1 - offset >= 0 else [1 for _ in range(len(X))]
+        site_next = [sample[ind1 + offset] for sample in X] if ind1 + offset < num_samples else [1 for _ in range(len(X))]
+        site1 = site_prev + site1 + site_next
+
+        site_prev = [sample[ind2 - offset] for sample in X] if ind2 - offset >= 0 else [1 for _ in range(len(X))]
+        site_next = [sample[ind2 + offset] for sample in X] if ind2 + offset < num_samples else [1 for _ in range(len(X))]
+        site2 = site_prev + site2 + site_next
+
+        site_prev = [sample[regular_ind - offset] for sample in X] if regular_ind - offset >= 0 else [1 for _ in range(len(X))]
+        site_next = [sample[regular_ind + offset] for sample in X] if regular_ind + offset < num_samples else [1 for _ in range(len(X))]
+        regular_site = site_prev + regular_site + site_next
 
     out_true = site1 + site2 if random.random() < 0.5 else site2 + site1
 

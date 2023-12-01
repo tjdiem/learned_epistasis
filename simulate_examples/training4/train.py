@@ -8,30 +8,25 @@ from ast import literal_eval
 
 GPU_available = torch.cuda.is_available()
 print(GPU_available)
-num_files = 3000
+num_files = 87500
 num_epochs = 200
-batch_size = 64
+batch_size = 256
 train_prop = 0.9
 num_estimate = 500
-lr = 0.00005
+lr = 0.0001
 
 
-with open("smaller_epistatic.txt","r") as f:
-    idx = literal_eval(f.read())
+# with open("smaller_epistatic.txt","r") as f:
+#     idx = literal_eval(f.read())
 
-print(len(idx))
+idx = list(range(87500))
 idx = torch.randperm(len(idx))[:num_files].tolist()
 
-# def process_item(i):
-#     return convert_sampling_file("sampled_genotypes/sample_stronger_" + str(i))
-
-# with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-#     X = list(executor.map(process_item, list(range(num_files))))
-
 X = [convert_files("../../test_training/sampled_genotypes/sample_stronger_" + str(i), "../../test_training/commands/command_stronger_" + str(i)) for i in idx] 
+X = [x for x in X if x is not None]
 
 X = torch.tensor(X)
-X = X.reshape(num_files*2, num_chrom * 2)
+X = X.reshape(-1, sample_width*num_chrom * 2)
 
 GetMemory()
 
@@ -121,6 +116,12 @@ for epoch in range(num_epochs):
     idx = torch.randperm(X_train.shape[0])
     X_train = X_train[idx]
     y_train = y_train[idx]
+
+    # Shuffle in sampling dimension
+    X = X.reshape(-1,2*sample_width,num_chrom)
+    idx = torch.randperm(num_chrom)
+    X = X[:,:,idx]
+    X = X.reshape(-1,sample_width*num_chrom*2)
     
     for ind in range(0,X_train.shape[0],batch_size):
 
