@@ -5,7 +5,7 @@ import torch.nn.functional as F
 num_chrom = 100
 len_chrom = 1000
 
-sample_width = 15
+sample_width = 1
 
 n_embd = len_chrom
 input_size = num_chrom

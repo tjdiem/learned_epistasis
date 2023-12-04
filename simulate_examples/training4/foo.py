@@ -2,20 +2,24 @@ from processing import *
 import numpy as np
 import matplotlib.pyplot as plt
 from ast import literal_eval
+import random
 
-with open("smaller_epistatic.txt","r") as f:
-    idx = literal_eval(f.read())
+# with open("smaller_epistatic.txt","r") as f:
+#     idx = literal_eval(f.read())
+
+idx = list(range(100_000))
+random.shuffle(idx)
 
 for i in idx[103:128]:
 
-    sampling_file = "../../test_training/sampled_genotypes/sample_stronger_" + str(i)
+    sampling_file = "../sampled_genotypes/sample_" + str(i)
     with open(sampling_file, "r") as f:
         lines = f.readlines()
 
     X = [[float(l) for l in line[:-1]] for line in lines]
 
     X = np.array(X) - 1
-    with open("../../test_training/commands/command_stronger_" + str(i), "r") as f:
+    with open("../commands/command_" + str(i), "r") as f:
         s = f.readlines()[0].split()
 
     points = [float(s[6]), float(s[7])]
