@@ -128,6 +128,13 @@ def convert_files(sampling_file, command_file):
 
     out_false = site2 + regular_site if random.random() < 0.5 else regular_site + site2
 
+    # print(sum(site1))
+    # print(sum(site2))
+    # print(sum(regular_site))
+    # print()
+    # print()
+
+
     return [out_true, out_false]
 
 def convert_command_file1(file):
