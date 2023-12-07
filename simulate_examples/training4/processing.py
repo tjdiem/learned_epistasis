@@ -74,12 +74,8 @@ def split_to_sample(split_file, sampled_sites):
 
 def convert_files(sampling_file, command_file):
     
-    _, num = command_file.split("_")
-    num = int(num)
-    
-    if num % 1000 == 0:
-        print(num)
-
+    if command_file.endswith("000"):
+        print(command_file[-5:])
 
     with open(sampling_file, "r") as f:
         lines = f.readlines()

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 num_chrom = 100
 len_chrom = 1000
 
-sample_width = 1
+sample_width = 55
 
 n_embd = len_chrom
 input_size = num_chrom
@@ -56,11 +56,12 @@ input_size1 = sample_width*2
 # output_size1 = 64
 n_chrom = 100
 n_embd = n_chrom + 2
-head_size = 96
-num_heads = 8 #head_size must be divisible by num_heads
-num_blocks = 3
+head_size = 192
+num_heads = 12 #head_size must be divisible by num_heads
+num_blocks = 4
+t_dropout = 0.0
 
-
+assert head_size % num_heads == 0
 
 
 class Head(nn.Module):
@@ -71,6 +72,9 @@ class Head(nn.Module):
        self.query = nn.Linear(n_embd, head_size, bias=False)
        self.value = nn.Linear(n_embd, head_size, bias=False)
        self.register_buffer("communication_matrix", torch.ones(input_size1,input_size1))
+       self.communication_matrix[:input_size1//2,:input_size1//2] = 0
+       self.communication_matrix[input_size1//2:,input_size1//2:] = 0
+       self.dropout = nn.Dropout(t_dropout)
 
 
    def forward(self, x):
@@ -79,8 +83,9 @@ class Head(nn.Module):
        k = self.key(x) # (batch, input_size, head_size)
        q = self.query(x)  # (batch, input_size, head_size)
        W = q @ k.transpose(-2,-1) * k.shape[-1]**-0.5 # (batch, input_size, input_size)
-       W = W.masked_fill(self.communication_matrix[:input_size1, :input_size1] == 0, float('-inf')) # (batch, input_size, input_size)
+       W = W.masked_fill(self.communication_matrix == 0, float('-inf')) # (batch, input_size, input_size)
        W = F.softmax(W, dim=-1)
+       W = self.dropout(W)
 
 
        v = self.value(x) # (batch, input_size, head_size)
@@ -94,11 +99,12 @@ class MultiHead(nn.Module):
        super().__init__()
        self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)]) #this can be parallelized
        self.linear = nn.Linear(head_size*num_heads,n_embd)
-
+       self.dropout = nn.Dropout(t_dropout)
 
    def forward(self, x):
        x = torch.cat([head(x) for head in self.heads],dim=-1) #(batch,input_size,head_size (global))
        x = self.linear(x) #(batch,input_size,n_embd)
+       x = self.dropout(x)
        return x
   
 class FeedForward(nn.Module):
@@ -109,7 +115,8 @@ class FeedForward(nn.Module):
        self.net = nn.Sequential(
            nn.Linear(n_embd, 4 * n_embd),
            nn.ReLU(),
-           nn.Linear(4 * n_embd, n_embd)
+           nn.Linear(4 * n_embd, n_embd),
+           nn.Dropout(t_dropout)
        )
 
 
@@ -157,6 +164,8 @@ class TransformerModel1(nn.Module):
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
+        self.dropout = nn.Dropout(t_dropout)
+
 
     def forward(self, x):
        
@@ -179,12 +188,15 @@ class TransformerModel1(nn.Module):
 
         x = self.blocks(x) #(batch, 2*sample_width, n_embd)
         x = x.reshape(x.shape[0], 2*sample_width*n_embd) #(batch, 2*sample_width*n_embd)
+
         x = self.ln1(x) #(batch,2*sample_width*n_embd)
         x = self.linear1(x) #(batch, sample_width * n_embd//2)
+        x = self.dropout(x)
         x = self.relu(x)
 
         x = self.ln2(x)
         x = self.linear2(x) #(batch, 100) #add layernorms?
+        x = self.dropout(x)
         x = self.relu(x)
 
         x = self.ln3(x)
@@ -260,3 +272,13 @@ class EpiModel(nn.Module):
         x = self.sigmoid(x)
 
         return x
+
+
+"""
+Ideas for improvement:
+Different optimizer: probably won't help
+penalty for similar heads in multihead attention: probably won't work
+For test examples we can input multiple permutations of each example and average the results: will probably help slightly
+One hot encoding inputs: probably isn't necessary
+distance between sites as input
+"""
