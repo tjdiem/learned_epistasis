@@ -59,7 +59,7 @@ n_embd = n_chrom + 2
 head_size = 192
 num_heads = 12 #head_size must be divisible by num_heads
 num_blocks = 4
-t_dropout = 0.0
+t_dropout = 0.15
 
 assert head_size % num_heads == 0
 
@@ -166,9 +166,31 @@ class TransformerModel1(nn.Module):
 
         self.dropout = nn.Dropout(t_dropout)
 
+    def evaltest(self, x, num_test, max_batch_size):
+        # for now num_test must not be greater than the maximum batch size model can take
+
+        assert max_batch_size >= num_test
+
+        batch_size = max_batch_size // num_test
+
+        y = torch.zeros((x.shape[0],))
+
+        for istart in range(0,x.shape[0],batch_size):
+            iend = min(istart+batch_size,x.shape[0])
+            x_example = x[istart:iend]
+            x_example = x_example.reshape(-1,2*sample_width,num_chrom)
+            x_example = x_example.repeat_interleave(num_test,1,1)
+            x_example = torch.stack([row[:,torch.randperm(num_chrom)] for row in x_example])
+            x_example = x_example.reshape(-1,sample_width*num_chrom*2)
+            y_example = self(x_example)
+            y_example = y_example.reshape(-1,num_test)
+            y_example = y_example.mean(dim=1)
+            y[istart:iend] = y_example
+
+        return y
 
     def forward(self, x):
-       
+
         x = x.reshape(-1, 2*sample_width,n_chrom)
         # X (batch, 2*sample_width, n_chrom)
         #print(x.shape)
@@ -203,7 +225,6 @@ class TransformerModel1(nn.Module):
         x = self.linear3(x) #(batch, 1)
         x = x.reshape(-1) #(batch)
         x = self.sigmoid(x) #(batch)
-
 
         # print(x.shape)
         # x = self.multihead(x) #batch, input_size, head_size
@@ -281,4 +302,6 @@ penalty for similar heads in multihead attention: probably won't work
 For test examples we can input multiple permutations of each example and average the results: will probably help slightly
 One hot encoding inputs: probably isn't necessary
 distance between sites as input
+randomly multiply some examples by -1 in training
+randomly switch order of two sites in training examples
 """

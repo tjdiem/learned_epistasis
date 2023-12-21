@@ -5,11 +5,13 @@ import concurrent.futures
 import torch
 import torch.nn as nn
 from ast import literal_eval
+import sys
 
+save_file = sys.argv[1] if sys.argv[1].endswith(".pth") else sys.argv[1] + ".pth"
 data_dir = "../Data3"
 GPU_available = torch.cuda.is_available()
 print(GPU_available)
-num_files = 20_000
+num_files = 100_000
 num_epochs = 30
 batch_size = 128
 train_prop = 0.9
@@ -17,13 +19,7 @@ num_estimate = 5000
 lr_start = 3e-4
 lr_end = lr_start/100
 
-
-# with open("smaller_epistatic.txt","r") as f:
-#     idx = literal_eval(f.read())
-
-# idx = list(range(87500))
-# idx = torch.randperm(len(idx))[:num_files].tolist()
-
+GetMemory()
 X = [convert_files(data_dir + "/sampled_genotypes/sample_" + str(i), data_dir + "/commands/command_" + str(i)) for i in range(num_files)] 
 
 C = [convert_command_file1(data_dir + "/commands/command_" + str(i)) for i in range(num_files)]
@@ -31,9 +27,11 @@ C = [c for x,c in zip(X,C) if x is not None]
 
 X = [x for x in X if x is not None]
 
+
 X = torch.tensor(X) - 1
 X = X.reshape(-1, sample_width*num_chrom * 2)
 
+print(X.shape)
 C = torch.tensor(C)
 C = C.reshape(-1, 11)
 
@@ -42,6 +40,7 @@ GetMemory()
 y = torch.tensor([i%2 for i in range(1,X.shape[0] + 1)])
 
 # Scramble data
+torch.manual_seed(random_seed)
 ind = int(train_prop * X.shape[0]) // 2
 idx = torch.randperm(X.shape[0] // 2)
 idx = [2*i for i in idx[:ind]] + [2*i + 1 for i in idx[:ind]] + [2*i for i in idx[ind:]] + [2*i + 1 for i in idx[ind:]] #include both True and False example for each sample
@@ -243,7 +242,18 @@ for epoch in range(num_epochs):
     X_train = X_train.reshape(-1,2*sample_width,num_chrom)
     idx = torch.randperm(num_chrom)
     X_train = X_train[:,:,idx]
+
+    # Randomly switch two sites 
+    mask = torch.rand(X_train.shape[0]) < 0.5
+    shift_indices = torch.fmod(torch.arange(2*sample_width) + sample_width, 2*sample_width)
+    X_train[mask] = X_train[mask][:, shift_indices]
+
+
     X_train = X_train.reshape(-1,sample_width*num_chrom*2)
+    # Randomly muliply each example by 1 or -1
+    rand = torch.randint(0,2,size=(X_train.shape[0],1)) * 2 - 1
+    X_train *= rand
+
 
     for ind in range(0,X_train.shape[0],batch_size):
 
@@ -264,7 +274,6 @@ for epoch in range(num_epochs):
             y_pred = model(X_batch)
         except torch.cuda.OutOfMemoryError:
             torch.cuda.empty_cache()
-            print(ind)
             y_pred = model(X_batch)
 
 
@@ -285,6 +294,9 @@ for epoch in range(num_epochs):
     #         print(child.weight)
     #         print("bias")
     #         print(child.bias)
+
+if save_file.lower() != "none.pth":
+    torch.save(model.state_dict(), save_file)
 
 """
 -----------------------------------------------------------------
