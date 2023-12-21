@@ -7,11 +7,13 @@ from math import sqrt, e, pi
 import numpy as np
 import matplotlib.pyplot as plt
 
-random.seed(1337)
+random_seed = 177
 num_samples = models.len_chrom
 num_chrom = 100
 start_time = time.time()
 sample_width = models.sample_width
+
+random.seed(random_seed)
 
 sigma = 2.5
 
@@ -73,7 +75,7 @@ def split_to_sample(split_file, sampled_sites):
 
 
 def convert_files(sampling_file, command_file):
-    
+
     if command_file.endswith("000"):
         print(command_file[-5:])
 
@@ -89,6 +91,9 @@ def convert_files(sampling_file, command_file):
     #random.shuffle(out) #This will shuffle the rows
     with open(command_file, "r") as f:
         s = f.readlines()[0].split()
+
+    # if 0.4 <= float(s[2]) <= 0.6:
+    #     return None
 
     points = [float(s[6]), float(s[7]), float(s[10])]
     ind1, ind2, regular_ind = [round(num_samples*point - 0.5) for point in points]
@@ -112,24 +117,10 @@ def convert_files(sampling_file, command_file):
 
     out_true = site1 + site2 if random.random() < 0.5 else site2 + site1
 
-    # rand = random.random()
-    # if 0 <= rand < 0.25:
-    #     out_false = site1 + regular_site
-    # elif 0.25 <= rand < 0.5:
-    #     out_false = site2 + regular_site
-    # elif 0.5 <= rand < 0.75:
-    #     out_false = regular_site + site1
-    # else:
-    #     out_false = regular_site + site2 
+    ep_site = site1 if random.random() < 0.5 else site2
+    # ep_site = site2
 
-    out_false = site2 + regular_site if random.random() < 0.5 else regular_site + site2
-
-    # print(sum(site1))
-    # print(sum(site2))
-    # print(sum(regular_site))
-    # print()
-    # print()
-
+    out_false = ep_site + regular_site if random.random() < 0.5 else regular_site + ep_site
 
     return [out_true, out_false]
 
