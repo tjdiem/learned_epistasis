@@ -92,6 +92,12 @@ def convert_files(sampling_file, command_file):
     with open(command_file, "r") as f:
         s = f.readlines()[0].split()
 
+    if -0.01 < float(s[11]) < 0.01:
+        return None
+    
+    if float(s[8]) < 0.05:
+        return None
+
     # if 0.4 <= float(s[2]) <= 0.6:
     #     return None
 
