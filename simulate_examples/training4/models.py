@@ -166,27 +166,37 @@ class TransformerModel1(nn.Module):
 
         self.dropout = nn.Dropout(t_dropout)
 
+    @torch.no_grad()
     def evaltest(self, x, num_test, max_batch_size):
-        # for now num_test must not be greater than the maximum batch size model can take
+        # for each example, we feed the model num_test combinations of the same example and average results
+        # max_batch_size denotes the maximum batch size that the model can take in one forward pass
+        # in each combination of an example, the samples are shuffled.  Later, we can randomly multiply by -1 or 1 or randomly switch order of two sites
 
-        assert max_batch_size >= num_test
+        device = "cuda" if torch.cuda.is_available() else "cpu" # make this global
+        
+        num_test_current = num_test
+        y = torch.zeros((x.shape[0],)).to(device)
+        
+        while num_test_current > 0:
+            num_test_iter = min(num_test_current, max_batch_size)
+            batch_size = max_batch_size // num_test_iter
+    
+            for istart in range(0,x.shape[0],batch_size):
+                iend = min(istart+batch_size,x.shape[0])
+                x_example = x[istart:iend].to(device)
+                x_example = x_example.reshape(-1,2*sample_width,num_chrom)
+                x_example = x_example.repeat_interleave(num_test_iter,dim=0)
+                x_example = torch.stack([row[:,torch.randperm(num_chrom)] for row in x_example])
+                x_example = x_example.reshape(-1,sample_width*num_chrom*2)
+                y_example = self(x_example).to(device)
+                y_example = y_example.reshape(-1,num_test_iter)
+                y_example = y_example.sum(dim=1)
+                y[istart:iend] += y_example
 
-        batch_size = max_batch_size // num_test
+            num_test_current -= num_test_iter
 
-        y = torch.zeros((x.shape[0],))
-
-        for istart in range(0,x.shape[0],batch_size):
-            iend = min(istart+batch_size,x.shape[0])
-            x_example = x[istart:iend]
-            x_example = x_example.reshape(-1,2*sample_width,num_chrom)
-            x_example = x_example.repeat_interleave(num_test,1,1)
-            x_example = torch.stack([row[:,torch.randperm(num_chrom)] for row in x_example])
-            x_example = x_example.reshape(-1,sample_width*num_chrom*2)
-            y_example = self(x_example)
-            y_example = y_example.reshape(-1,num_test)
-            y_example = y_example.mean(dim=1)
-            y[istart:iend] = y_example
-
+        y /= num_test
+        
         return y
 
     def forward(self, x):
@@ -194,7 +204,7 @@ class TransformerModel1(nn.Module):
         x = x.reshape(-1, 2*sample_width,n_chrom)
         # X (batch, 2*sample_width, n_chrom)
         #print(x.shape)
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = "cuda" if torch.cuda.is_available() else "cpu" # make this global
     #    pos_embd = self.pos_embedding(torch.arange(sample_width*2).to(device)) # (2*sample_width, n_embd)
     #    x = x + pos_embd #(batch, 2*sample_width, n_embd) # we possibly want to concatenate this instead of adding
         #x = torch.cat((x, torch.zeros(len_chrom)),dim=2)
@@ -301,7 +311,7 @@ Different optimizer: probably won't help
 penalty for similar heads in multihead attention: probably won't work
 For test examples we can input multiple permutations of each example and average the results: will probably help slightly
 One hot encoding inputs: probably isn't necessary
-distance between sites as input
-randomly multiply some examples by -1 in training
-randomly switch order of two sites in training examples
+distance between sites, plus other information, as input
+En
+
 """
