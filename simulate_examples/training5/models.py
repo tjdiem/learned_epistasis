@@ -52,12 +52,13 @@ class PairwiseSimpleModel(nn.Module):
     
 
 
-input_size1 = sample_width*2
+input_size1 = sample_width*2 + 1
 # output_size1 = 64
+XI_size = 4
 n_chrom = 100
 n_embd = n_chrom + 2
-head_size = 192
-num_heads = 12 #head_size must be divisible by num_heads
+head_size = 102
+num_heads = 6 #head_size must be divisible by num_heads
 num_blocks = 4
 t_dropout = 0.15
 
@@ -72,8 +73,8 @@ class Head(nn.Module):
        self.query = nn.Linear(n_embd, head_size, bias=False)
        self.value = nn.Linear(n_embd, head_size, bias=False)
        self.register_buffer("communication_matrix", torch.ones(input_size1,input_size1))
-       self.communication_matrix[:input_size1//2,:input_size1//2] = 0
-       self.communication_matrix[input_size1//2:,input_size1//2:] = 0
+       self.communication_matrix[:sample_width,:sample_width] = 0
+       self.communication_matrix[sample_width:2*sample_width,sample_width:2*sample_width] = 0
        self.dropout = nn.Dropout(t_dropout)
 
 
@@ -83,9 +84,9 @@ class Head(nn.Module):
        k = self.key(x) # (batch, input_size, head_size)
        q = self.query(x)  # (batch, input_size, head_size)
        W = q @ k.transpose(-2,-1) * k.shape[-1]**-0.5 # (batch, input_size, input_size)
-       W = W.masked_fill(self.communication_matrix == 0, float('-inf')) # (batch, input_size, input_size)
+    #    W = W.masked_fill(self.communication_matrix == 0, float('-inf')) # (batch, input_size, input_size)
        W = F.softmax(W, dim=-1)
-       W = self.dropout(W)
+    #    W = self.dropout(W)
 
 
        v = self.value(x) # (batch, input_size, head_size)
@@ -128,6 +129,7 @@ class Block(nn.Module):
 
    def __init__(self):
        super().__init__()
+    #    self.multihead = nn.MultiheadAttention(n_embd, 6)
        self.multihead = MultiHead(num_heads, head_size // num_heads)
        self.ffwd = FeedForward(n_embd)
        self.ln1 = nn.LayerNorm(n_embd)
@@ -136,6 +138,9 @@ class Block(nn.Module):
 
    def forward(self, x):
        # input = output = (batch,input_size,n_embd)
+    #    y = self.ln1(x)
+    #    y, _ = self.multihead(y,y,y)
+    #    x = x + y
        x = x + self.multihead(self.ln1(x))
        x = x + self.ffwd(self.ln2(x))
        return x
@@ -149,8 +154,8 @@ class TransformerModel1(nn.Module):
         self.pos_embedding = nn.Embedding(sample_width*2, n_embd)
         self.blocks = nn.Sequential(*[Block() for _ in range(num_blocks)])
         self.multihead = MultiHead(num_heads, head_size // num_heads)
-        self.linear1 = nn.Linear(2*sample_width*n_embd,sample_width*n_embd//2) #can change the output size of this
-        self.ln1 = nn.LayerNorm(2*sample_width*n_embd)
+        self.linear1 = nn.Linear(input_size1*n_embd, sample_width*n_embd//2) #can change the output size of this
+        self.ln1 = nn.LayerNorm(input_size1*n_embd)
 
 
         ##
@@ -165,6 +170,15 @@ class TransformerModel1(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
         self.dropout = nn.Dropout(t_dropout)
+
+        # self.init_weights()
+
+    def init_weights(self):
+        for name, param in self.named_parameters():
+            if 'weight' in name:
+                nn.init.normal_(param, mean=0.0, std=0.02)
+            elif 'bias' in name:
+                nn.init.zeros_(param)
 
     @torch.no_grad()
     def evaltest(self, x, num_test, max_batch_size):
@@ -199,10 +213,11 @@ class TransformerModel1(nn.Module):
         
         return y
 
-    def forward(self, x):
+    def forward(self, x, xi):
 
         x = x.reshape(-1, 2*sample_width,n_chrom)
         # X (batch, 2*sample_width, n_chrom)
+        # XI (batch, XI_size)
         #print(x.shape)
         device = "cuda" if torch.cuda.is_available() else "cpu" # make this global
     #    pos_embd = self.pos_embedding(torch.arange(sample_width*2).to(device)) # (2*sample_width, n_embd)
@@ -218,10 +233,18 @@ class TransformerModel1(nn.Module):
         site_pos = site_pos.repeat(x.shape[0],1,1)
         x = torch.cat((x,site_num,site_pos),2)
 
-        x = self.blocks(x) #(batch, 2*sample_width, n_embd)
-        x = x.reshape(x.shape[0], 2*sample_width*n_embd) #(batch, 2*sample_width*n_embd)
+        xi = torch.cat((xi,torch.zeros((xi.shape[0],n_embd-xi.shape[1])).to(device)), 1) # (batch, n_embd)
+        xi[:,-1] = 2
+        xi = xi.unsqueeze(1) #(batch,1,n_embd)
 
-        x = self.ln1(x) #(batch,2*sample_width*n_embd)
+        x = torch.cat((x,xi),1) #(batch, 2*sample_width+1 = input_size1, n_embd)
+
+        x = self.blocks(x) #(batch, input_size1, n_embd)
+        x = x.reshape(x.shape[0], input_size1*n_embd) #(batch, input_size1*n_embd)
+
+        # x = torch.cat((x,xi), 1) #(batch, input_size1*n_embd + xi_size)
+        x = self.ln1(x) #(batch,input_size1*n_embd)
+
         x = self.linear1(x) #(batch, sample_width * n_embd//2)
         x = self.dropout(x)
         x = self.relu(x)
@@ -312,6 +335,6 @@ penalty for similar heads in multihead attention: probably won't work
 For test examples we can input multiple permutations of each example and average the results: will probably help slightly
 One hot encoding inputs: probably isn't necessary
 distance between sites, plus other information, as input
-custom weight initialization
+En
 
 """

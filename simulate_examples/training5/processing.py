@@ -13,8 +13,6 @@ num_chrom = 100
 start_time = time.time()
 sample_width = models.sample_width
 
-random.seed(random_seed)
-
 sigma = 2.5
 
 assert sample_width >= 1 and sample_width % 2 == 1
@@ -88,10 +86,6 @@ def convert_files(sampling_file, command_file):
 
     X = [[int(l) for l in line[:-1]] for line in lines]
 
-    for i in range(len(X[0])):
-        if abs(sum([X[j][i] for j in range(len(X))])) >= 99:
-            return None
-
     #random.shuffle(out) #This will shuffle the rows
     with open(command_file, "r") as f:
         s = f.readlines()[0].split()
@@ -101,9 +95,6 @@ def convert_files(sampling_file, command_file):
     
     # if float(s[8]) < 0.05:
     #     return None
-    
-    if float(s[8]) > 0.04:
-        return None
 
     # if 0.4 <= float(s[2]) <= 0.6:
     #     return None
@@ -136,6 +127,23 @@ def convert_files(sampling_file, command_file):
     out_false = ep_site + regular_site if random.random() < 0.5 else regular_site + ep_site
 
     return [out_true, out_false]
+
+def get_file_info(file):
+
+    with open(file, "r") as f:
+        info = f.read().split()
+
+    info = [float(i) for i in info]
+
+    site_loc_true = [info[6], info[7]] if random.random() < 0.5 else [info[7], info[6]]
+
+    ep_loc = info[6] if random.random() < 0.5 else info[7]
+
+    site_loc_false = [ep_loc, info[10]] if random.random() < 0.5 else [info[10], ep_loc]
+    
+    out = [info[2], info[3]/600]
+
+    return [out + site_loc_true, out + site_loc_false]
 
 def convert_command_file1(file):
     
