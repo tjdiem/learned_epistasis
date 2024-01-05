@@ -251,8 +251,8 @@ for epoch in range(num_epochs):
 
     X_train = X_train.reshape(-1,sample_width*num_chrom*2)
     # Randomly muliply each example by 1 or -1
-    rand = torch.randint(0,2,size=(X_train.shape[0],1)) * 2 - 1
-    X_train *= rand
+    # rand = torch.randint(0,2,size=(X_train.shape[0],1)) * 2 - 1
+    # X_train *= rand
 
 
     for ind in range(0,X_train.shape[0],batch_size):
