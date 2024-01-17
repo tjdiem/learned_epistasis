@@ -134,4 +134,4 @@ def convert_command_file1(file):
 
     flist = [float(x) for x in lines.split()[1:]]
 
-    return [flist,flist]
+    return [flist,flist,flist,flist]
