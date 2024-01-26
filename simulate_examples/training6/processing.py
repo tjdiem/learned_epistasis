@@ -79,8 +79,11 @@ def convert_files(sampling_file, command_file):
     if command_file.endswith("000"):
         print(command_file[-5:])
 
-    with open(sampling_file, "r") as f:
-        lines = f.readlines()
+    try:
+        with open(sampling_file, "r") as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        return None
 
     if len(lines) < 200:
         return None
@@ -90,6 +93,9 @@ def convert_files(sampling_file, command_file):
 
     with open(command_file, "r") as f:
         s = f.readlines()[0].split()
+
+    if int(s[3]) > 300:
+        return None
 
     command_idx = [6,7,10,11]
     points = [float(s[idx]) for idx in command_idx]

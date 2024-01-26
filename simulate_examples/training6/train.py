@@ -8,22 +8,21 @@ from ast import literal_eval
 import sys
 
 save_file = sys.argv[1] if sys.argv[1].endswith(".pth") else sys.argv[1] + ".pth"
-data_dir = "../Data6"
+data_dir = "../Data7"
 GPU_available = torch.cuda.is_available()
 print(GPU_available)
-num_files = 1_000
+num_files = 50_000
 num_epochs = 30
 batch_size = 128
 train_prop = 0.9
 num_estimate = 5000
-lr_start = 3e-5
+lr_start = 3e-3
 lr_end = lr_start/100
 
 GetMemory()
 X = [convert_files(data_dir + "/sampled_genotypes/sample_" + str(i), data_dir + "/commands/command_" + str(i)) for i in range(num_files)] 
 
-C = [convert_command_file1(data_dir + "/commands/command_" + str(i)) for i in range(num_files)]
-C = [c for x,c in zip(X,C) if x is not None]
+C = [convert_command_file1(data_dir + "/commands/command_" + str(i)) for i in range(num_files) if X[i] is not None]
 
 X = [x for x in X if x is not None]
 
@@ -66,9 +65,26 @@ lr = lr_start
 lr_factor = (lr_end/lr_start)**(1/(num_epochs - 1))
 
 # Define network
-model = TransformerModel1()
+model = BiasModel()
 criterion = nn.BCELoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
+
+############## Augment test data
+# Shuffle in sampling dimension
+X_test = X_test.reshape(-1,2*sample_width,num_chrom)
+idx = torch.randperm(num_chrom)
+X_test = X_test[:,:,idx]
+
+# Randomly switch two sites 
+mask = torch.rand(X_test.shape[0]) < 0.5
+shift_indices = torch.fmod(torch.arange(2*sample_width) + sample_width, 2*sample_width)
+X_test[mask] = X_test[mask][:, shift_indices]
+
+X_test = X_test.reshape(-1,sample_width*num_chrom*2)
+# Randomly muliply each example by 1 or -1
+rand = torch.randint(0,2,size=(X_test.shape[0],1)) * 2 - 1
+X_test *= rand
+#############
 
 # Define functions for getting random batch and calculating loss
 def get_batch(split, num_samples):
@@ -260,8 +276,8 @@ for epoch in range(num_epochs):
 
     X_train = X_train.reshape(-1,sample_width*num_chrom*2)
     # Randomly muliply each example by 1 or -1
-    # rand = torch.randint(0,2,size=(X_train.shape[0],1)) * 2 - 1
-    # X_train *= rand
+    rand = torch.randint(0,2,size=(X_train.shape[0],1)) * 2 - 1
+    X_train *= rand
 
 
     for ind in range(0,X_train.shape[0],batch_size):
@@ -304,6 +320,7 @@ for epoch in range(num_epochs):
     #         print("bias")
     #         print(child.bias)
 
-if save_file.lower() != "none.pth" and acc > best_acc:
-    best_acc = acc
-    torch.save(model.state_dict(), save_file)
+    if save_file.lower() != "none.pth" and acc > best_acc:
+        best_acc = acc
+        print("SAVING MODEL")
+        torch.save(model.state_dict(), save_file)

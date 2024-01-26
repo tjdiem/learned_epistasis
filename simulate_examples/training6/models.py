@@ -245,6 +245,30 @@ class TransformerModel1(nn.Module):
 
 
         return x
+
+class BiasModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear1 = nn.Linear(2*sample_width, 100)
+        self.linear2 = nn.Linear(100, 50)
+        self.linear3 = nn.Linear(50, 1)
+
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        x = x.reshape(-1, 2*sample_width, 100).float()
+        x = x.mean(dim=2)
+
+        x = self.linear1(x)
+        x = self.relu(x)
+        x = self.linear2(x)
+        x = self.relu(x)
+        x = self.linear3(x)
+        x = x.reshape(-1)
+        x = self.sigmoid(x)
+
+        return x
     
 piece_size = 15
 
